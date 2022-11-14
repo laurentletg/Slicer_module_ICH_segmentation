@@ -124,6 +124,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
 
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
+    self.called_onLoadPrediction = False
 
 
   def setup(self):
@@ -463,6 +464,8 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       except AssertionError as e:
         print('Mismatch in case error :: {}'.format(str(e)))
 
+
+
   # ----- ANW Addition ----- : Actions for pop-up message box buttons
   def msg1_clicked(self, msg1_button):
       if msg1_button.text == 'OK':
@@ -484,10 +487,12 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       
   def onBrowseFolders_2Button(self):
       self.predictionFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
+
       self.predictions_paths = sorted(glob(os.path.join(self.predictionFolder, f'{SEGM_FILE_TYPE}')))
       print(self.predictions_paths)
+
       try:
-        assert len(self.CasesPaths)==len(self.predictions_paths)
+        assert len(self.CasesPaths) == (len(self.predictions_paths) or len(self.predictions_paths_NIFTI))
       except AssertionError as e:
         print('Not the same number of Volumes and predictions !')
         msgboxpred = qt.QMessageBox()
@@ -499,8 +504,9 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
   def onLoadPredictionButton(self): 
       # Get list of prediction names
       try:
-        self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_ICH_pred.seg.nrrd',os.path.split(i)[-1])  for i in self.predictions_paths])
+        self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_ICH_predictions.seg.nrrd',os.path.split(i)[-1]) for i in self.predictions_paths])
         print(self.predictions_names)
+        self.called = False # restart timer
       except AttributeError as e:
             msgnopredloaded=qt.QMessageBox() # Typo correction
             msgnopredloaded.setText('Please select the prediction directory!')
@@ -508,11 +514,12 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
             # Then load the browse folder thing for the user
             self.onBrowseFolders_2Button()
       # Match the prediction names that corresponds to the loaded segmentatiion
-      self.currentPrediction_Index,self.currentPrediction_ID = [(i,j) for i,j in enumerate(self.predictions_names) if j == self.currentCase][0]
+      # self.currentPrediction_Index, self.currentPrediction_ID = [(i,j) for i,j in enumerate(self.predictions_names) if j == self.currentCase][0]
+      self.currentPrediction_Index, self.currentPrediction_ID = [(i, self.predictions_names[i]) for i in range(len(self.predictions_names)) if i == self.currentCase_index][0] # return a list of tuples
       print(f'Current case :: {self.currentCase}')
-      print(f'Current pred ID :: {self.currentPrediction_ID }')
+      print(f'Current prediction ID :: {self.currentPrediction_ID }')
       print(f'Current case index :: {self.currentCase_index}')
-      print(f'Current pred index :: {self.currentPrediction_Index}')
+      print(f'Current prediction index :: {self.currentPrediction_Index}')
       
       self.currentPredictionPath = self.predictions_paths[self.currentCase_index]
       # print(self.currentPrediction_ID)
@@ -551,7 +558,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       sc = shn.GetSceneItemID()
       shn.GetItemChildren(sc, items, True)
       self.ICH_segment_name = shn.GetItemName(items.GetId(2))
-      print(f'Segment name {self.ICH_segment_name}')
+      print(f'Segment name :: {self.ICH_segment_name}')
       self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
       self.updateCurrentSegmenationLabel()
       # Start timer
