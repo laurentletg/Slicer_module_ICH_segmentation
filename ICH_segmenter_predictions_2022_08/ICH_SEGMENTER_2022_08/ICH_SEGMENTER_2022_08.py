@@ -11,6 +11,7 @@ from glob import glob
 import re
 import time
 import pandas as pd
+from datetime import datetime
 
 
 
@@ -122,6 +123,12 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
     self.predictions_names= None
     self.DefaultDir = None
 
+    # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
+    self.called = False
+    self.called_onLoadPrediction = False
+    # self.editor = None
+
+
   def setup(self):
     """
     Called when the user opens the module the first time and the widget is initialized.
@@ -165,6 +172,19 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
     self.ui.pushButton_9.connect('clicked(bool)', self.onPushButton_9)  
     self.ui.pushButton_10.connect('clicked(bool)', self.onPushButton_10)  
     self.ui.pushButton_11.connect('clicked(bool)', self.onPushButton_11)
+
+    ### ANW CONNECTIONS
+    self.ui.PauseTimerButton.connect('clicked(bool)', self.togglePauseTimerButton)
+    self.ui.pushButton_ToggleFill.connect('clicked(bool)', self.toggleFillButton)
+    self.ui.pushButton_ToggleFill.setStyleSheet("background-color : indianred")
+    self.ui.SegmentWindowPushButton.connect('clicked(bool)', self.onSegmendEditorPushButton)
+    self.ui.SegmentWindowPushButton.setStyleSheet("background-color : lightgray")
+    self.ui.radioButton_Edema.connect('clicked(bool)', self.onCheckEdema)
+
+    # import qSlicerSegmentationsModuleWidgetsPythonQt
+    # self.editor = qSlicerSegmentationsModuleWidgetsPythonQt.qMRMLSegmentEditorWidget()
+    # self.editor.setMaximumNumberOfUndoStates(10)
+    # self.editor.setMRMLScene(slicer.mrmlScene)
 
 
   def getDefaultDir(self):
@@ -225,7 +245,8 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # self.loadPatient()
 
   def updateCaseIndex(self,index):
-      self.ui.FileIndex.setText('{} / {}'.format(index,len(self.Cases)))
+      # ----- ANW Modification ----- : Numerator on UI should start at 1 instead of 0 for coherence
+      self.ui.FileIndex.setText('{} / {}'.format(index+1,len(self.Cases)))
 
   def updateCurrentFolder(self):
       # self.ui.CurrecntFolder.setText(os.path.join(self.CurrentFolder,self.currentCase))
@@ -267,18 +288,19 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # self.currentCase = os.path.join(self.CurrentFolder,self.Cases[self.currentCase_index])
       self.loadPatient()
 
-  def loadPatient(self):
-      slicer.mrmlScene.Clear()
-      slicer.util.loadVolume(self.currentCasePath)
-      self.VolumeNode = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
-      self.updateCaseAll()
-      self.ICH_segm_name = None
-      self.ui.CurrentSegmenationLabel.setText('New patient loaded - No segmentation created!')
-      # Adjust windowing (no need to use self. since this is used locally)
-      Vol_displayNode = self.VolumeNode.GetDisplayNode()
-      Vol_displayNode.AutoWindowLevelOff()
-      Vol_displayNode.SetWindow(85)
-      Vol_displayNode.SetLevel(45)
+  # ----- ANW Modification ----- : This code is exactly the same as 2 blocks prior, I commented it
+  # def loadPatient(self):
+  #     slicer.mrmlScene.Clear()
+  #     slicer.util.loadVolume(self.currentCasePath)
+  #     self.VolumeNode = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
+  #     self.updateCaseAll()
+  #     self.ICH_segm_name = None
+  #     self.ui.CurrentSegmenationLabel.setText('New patient loaded - No segmentation created!')
+  #     # Adjust windowing (no need to use self. since this is used locally)
+  #     Vol_displayNode = self.VolumeNode.GetDisplayNode()
+  #     Vol_displayNode.AutoWindowLevelOff()
+  #     Vol_displayNode.SetWindow(85)
+  #     Vol_displayNode.SetLevel(45)
 
 
   def onNewICHSegm(self):
@@ -305,71 +327,288 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # Toggle paint brush right away. 
       self.onPushButton_1()
       self.startTimer()
+
+      # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
+      self.called = False
+
+  def onNewICHSegm(self):
+      # slicer.util.selectModule("SegmentEditor")
+      self.ICH_segm_name = "{}_ICH".format(self.currentCase)
+      print(f'Segmentation name:: {self.ICH_segm_name}')
+      self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+      self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
+      self.segmentationNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
+      self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
+      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
+      # set refenrence geometry to Volume node
+      self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+      #below with add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name
+      self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.ICH_segm_name)
+      #Select Segment (else you need to click on it yourself)
+      shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+      items = vtk.vtkIdList()
+      sc = shn.GetSceneItemID()
+      shn.GetItemChildren(sc, items, True)
+      self.ICH_segment_name = shn.GetItemName(items.GetId(2))
+      self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
+      self.updateCurrentSegmenationLabel()
+      # Toggle paint brush right away.
+      self.onPushButton_1()
+      self.startTimer()
+
+      # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
+      self.called = False
   
+  # def startTimer(self):
+  #     print('ICH segment name::: {}'.format(self.ICH_segment_name))
+  #     self.start_time = datetime.now()
+  #     print("STARTING TIMER !!!!")
+  #
+  #     # ----- ANW Addition ----- : Code to keep track of time passed with lcdNumber on UI
+  #     # Create a timer
+  #     self.timer = qt.QTimer()
+  #     self.timer.timeout.connect(self.updatelcdNumber)
+  #
+  #     # Start the timer and update every second
+  #     self.timer.start(1000)
+  #
+  #     # Call the updatelcdNumber function
+  #     self.updatelcdNumber()
+
+
+
   def startTimer(self):
       print('ICH segment name::: {}'.format(self.ICH_segment_name))
-      self.start_time = time.perf_counter()
+      self.counter = 0
+
+      self.flag = True
       print("STARTING TIMER !!!!")
 
+      # ----- ANW Addition ----- : Code to keep track of time passed with lcdNumber on UI
+      # Create a timer
+      self.timer = qt.QTimer()
+      self.timer.timeout.connect(self.updatelcdNumber)
 
-  
-        
+      # Start the timer and update every second
+      self.timer.start(100)
+
+      # Call the updatelcdNumber function
+      self.updatelcdNumber()
+
+  def updatelcdNumber(self):
+      # Get the time
+      if self.flag:
+          self.counter += 1
+
+      self.ui.lcdNumber.display(self.counter/10)
+
+  # def stopTimer(self):
+  #     # If already called once (i.e when user pressed save segm button but forgot to annotator name), simply return the time
+  #     if self.called:
+  #         return self.total_time
+  #     else:
+  #         try:
+  #             print('STOPPING TIMER!')
+  #             self.total_time = round((time.perf_counter() - self.start_time), 2)
+  #             self.timer.stop()
+  #             print(f"Total segmentation time: {self.total_time} seconds")
+  #             self.called = True
+  #             return self.total_time
+  #         except AttributeError as e:
+  #             print(f'!!! YOU DID NOT START THE COUNTER !!! :: {e}')
+  #             return None
+
+  def stopTimer(self):
+      # If already called once (i.e when user pressed save segm button but forgot to annotator name), simply return the time
+      if self.called:
+          return self.total_time
+      else:
+          try:
+              print('STOPPING TIMER!')
+              self.total_time = self.counter/10
+              self.timer.stop()
+              print(f"Total segmentation time: {self.total_time} seconds")
+              self.flag = False
+              self.called = True
+              return self.total_time
+          except AttributeError as e:
+              print(f'!!! YOU DID NOT START THE COUNTER !!! :: {e}')
+              return None
+
+  # def togglePauseTimerButton(self):
+  #     # if button is checked
+  #     if self.ui.PauseTimerButton.isChecked():
+  #         # setting background color to light-blue
+  #         self.ui.PauseTimerButton.setStyleSheet("background-color : lightblue")
+  #         self.ui.PauseTimerButton.setText('Restart')
+  #         self.intermediate_time = round((time.perf_counter() - self.start_time), 2)
+  #         self.timer.stop()
+  #
+  #     # if it is unchecked
+  #     else:
+  #         # set background color back to light-grey
+  #         self.ui.PauseTimerButton.setStyleSheet("background-color : lightgrey")
+  #         self.ui.PauseTimerButton.setText('Pause')
+  #         self.timer.start(1000)
+
+
+  def togglePauseTimerButton(self):
+      # if button is checked - Time paused
+      if self.ui.PauseTimerButton.isChecked():
+          # setting background color to light-blue
+          self.ui.PauseTimerButton.setStyleSheet("background-color : lightblue")
+          self.ui.PauseTimerButton.setText('Restart')
+          self.timer.stop()
+          self.flag = False
+
+      # if it is unchecked
+      else:
+          # set background color back to light-grey
+          self.ui.PauseTimerButton.setStyleSheet("background-color : lightgrey")
+          self.ui.PauseTimerButton.setText('Pause')
+          self.timer.start(100)
+          self.flag = True
+
+
+
+  def createFolders(self):
+      self.revision_step = self.ui.RevisionStep.currentText
+      if len(self.revision_step) != 0:
+          self.output_dir_labels= os.path.join(self.CurrentFolder, f'Labels_{self.revision_step[0]}') # only get the number
+          os.makedirs(self.output_dir_labels, exist_ok=True)
+          # add a subfolder with nifti segmentations
+          self.output_dir_labels_nii = os.path.join(self.CurrentFolder, f'Labels_nii_{self.revision_step[0]}')
+          os.makedirs(self.output_dir_labels_nii, exist_ok=True)
+          # Create separate folder
+          self.output_dir_time= os.path.join(self.CurrentFolder, f'Time_{self.revision_step[0]}')
+          os.makedirs(self.output_dir_time, exist_ok=True)
+      else:
+          print('Please select revision step !!!')
+          msgboxtime = qt.QMessageBox()
+          msgboxtime.setText("Segmentation not saved : revision step is not defined!  \n Please save again with revision step!")
+          msgboxtime.exec()
+
+
+  def onCheckEdema(self):
+
+      if self.ui.radioButton_Edema.isChecked(): # Uncheck autoExclusive in UI or else it will stay checked forever
+          self.edema = self.ui.radioButton_Edema.text
+      else:
+          self.edema = None
+
+      return self.edema
+
+
+  # ----- Modification -----
   def onSaveSegmentationButton(self):
       # Note that perf_counter should only be used for interval counting, returns float of time in SECONDS
       #By default creates a new folder in the volume directory 
       # FUTURE IMPROVEMENT: add the name of the segmenter and level in the name
-      self.output_dir_labels= os.path.join(self.CurrentFolder, 'Labels')
-      os.makedirs(self.output_dir_labels, exist_ok= True)
-      # add a subfolder with nifti segmentations
-      self.output_dir_labels_nii = os.path.join(self.CurrentFolder, 'Labels_nii')
-      os.makedirs(self.output_dir_labels_nii, exist_ok= True)
-      #    print(self.AnnotatorDegree.currentText) 
-          
-      try:
-        print('STOPPING TIMER!')
-        self.total_time = round((time.perf_counter() - self.start_time), 2)
-        print(f"Total segmentation time: {self.total_time} seconds")
-      except AttributeError as e:
-        print(f'!!! YOU DID NOT START THE COUNTER !!! :: {e}')    
-      # TOTAL TIME
-      # Save time to csv
-      # Create separate folder
-      print('Saving time')
-      self.output_dir_time= os.path.join(self.CurrentFolder, 'Time')
-      os.makedirs(self.output_dir_time, exist_ok= True)
-      annotator_name = self.ui.Annotator_name.text
-      
-      if annotator_name:
-            df = pd.DataFrame({'Case number':[self.currentCase],'Annotator Name':[annotator_name], 'Time':[str(self.total_time)]})
-            df.to_csv(os.path.join(self.output_dir_time,'{}_Case_{}_time.csv'.format(annotator_name,self.currentCase)))
+
+      # Stop the timer when the button is pressed
+      self.time = self.stopTimer()
+
+
+      # Create folders if not exist
+      self.createFolders()
+
+      #    print(self.AnnotatorDegree.currentText)
+      self.annotator_name = self.ui.Annotator_name.text
+      self.annotator_degree = self.ui.AnnotatorDegree.currentText
+
+      self.edema = self.onCheckEdema()
+
+
+      # Save if annotator_name is not empty and timer started:
+      if self.annotator_name and self.time is not None:
+          print('Saving time')
+          # Save time to csv
+          self.df = pd.DataFrame(
+              {'Case number': [self.currentCase], 'Annotator Name': [self.annotator_name], 'Annotator degree': [self.annotator_degree],
+               'Time': [str(self.time)], 'Revision step': [self.revision_step[0]]})
+
+          self.outputTimeFile = os.path.join(self.output_dir_time,
+                                             '{}_Case_{}_time_{}.csv'.format(self.annotator_name, self.currentCase, self.revision_step[0]))
+          if not os.path.isfile(self.outputTimeFile):
+              self.df.to_csv(self.outputTimeFile)
+          else:
+              print('This time file already exists')
+              msg1 = qt.QMessageBox()
+              msg1.setWindowTitle('Save As')
+              msg1.setText(
+                  f'The file {self.annotator_name}_Case_{self.currentCase}_time_{self.revision_step[0]}.csv already exists \n Do you want to replace the existing file?')
+              msg1.setIcon(qt.QMessageBox.Warning)
+              msg1.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+              msg1.buttonClicked.connect(self.msg1_clicked)
+              msg1.exec()
+
+          # Save .nrrd file
+          if self.edema is None:
+              self.outputSegmFile = os.path.join(self.output_dir_labels,
+                                                 "{}_{}_{}.seg.nrrd".format(self.ICH_segm_name, self.annotator_name, self.revision_step[0]))
+          else:
+              self.outputSegmFile = os.path.join(self.output_dir_labels,
+                                                 "{}_{}_{}_{}.seg.nrrd".format(self.ICH_segm_name, self.annotator_name, self.edema,
+                                                                            self.revision_step[0]))
+          if not os.path.isfile(self.outputSegmFile):
+              slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
+          else:
+              print('This .nrrd file already exists')
+              msg2 = qt.QMessageBox()
+              msg2.setWindowTitle('Save As')
+              msg2.setText(
+                  f'The file {self.ICH_segm_name}_{self.annotator_name}_{self.revision_step[0]}.seg.nrrd already exists \n Do you want to replace the existing file?')
+              msg2.setIcon(qt.QMessageBox.Warning)
+              msg2.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+              msg2.buttonClicked.connect(self.msg2_clicked)
+              msg2.exec()
+
+          # Save alternative nitfi
+          # Export segmentation to a labelmap volume
+          # Note to save to nifti you need to convert to labelmapVolumeNode
+          self.labelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
+          slicer.modules.segmentations.logic().ExportVisibleSegmentsToLabelmapNode(self.segmentationNode,
+                                                                                   self.labelmapVolumeNode,
+                                                                                   self.VolumeNode)
+          if self.edema is None:
+              self.outputSegmFileNifti = os.path.join(self.output_dir_labels_nii,
+                                                  "{}_{}_{}.nii.gz".format(self.ICH_segm_name, self.annotator_name, self.revision_step[0]))
+          else:
+              self.outputSegmFileNifti = os.path.join(self.output_dir_labels_nii,
+                                                      "{}_{}_{}_{}.nii.gz".format(self.ICH_segm_name, self.annotator_name, self.edema,
+                                                                               self.revision_step[0]))
+          if not os.path.isfile(self.outputSegmFileNifti):
+              slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
+          else:
+              print('This .nii.gz file already exists')
+              msg3 = qt.QMessageBox()
+              msg3.setWindowTitle('Save As')
+              msg3.setText(
+                  f'The file {self.ICH_segm_name}_{self.annotator_name}_{self.revision_step[0]}.nii.gz already exists \n Do you want to replace the existing file?')
+              msg3.setIcon(qt.QMessageBox.Warning)
+              msg3.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+              msg3.buttonClicked.connect(self.msg3_clicked)
+              msg3.exec()
+
+          # Saving messages
+          print((f'Saving case : {self.VolumeNode.GetName()}'))
+          self.ui.CurrentSegmenationLabel.setText(f'Case {self.VolumeNode.GetName()} saved !')
+
+      # If annotator_name empty or timer not started.
       else:
-            print('Empty annotator name !!!')
-            msgboxtime = qt.QMessageBox()
-            msgboxtime.setText("Segmentation not saved : no annotator name !  \n Please save again with your name!")
-            msgboxtime.exec()
-      # Msg box if no segmentation 
-      if self.ICH_segm_name:
-            self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segm_name)
-      else:
-            msgbox_no_segm = qt.QMessageBox()
-            msgbox_no_segm.setText("No segmentation loaded !")
-            msgbox_no_segm.exec()
-            
-      # #Remove segmentation fill
-      # segmentationNode.GetDisplayNode().SetOpa``city2DFill(0)
-      self.outputSegmFile = os.path.join(self.output_dir_labels,"{}_{}.seg.nrrd".format(self.ICH_segm_name, annotator_name))
-      slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
-      # Save alternative nitfi 
-      # Export segmentation to a labelmap volume
-      # Note to save to nifti you need to convert to labelmapVolumeNode
-      labelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
-      slicer.modules.segmentations.logic().ExportVisibleSegmentsToLabelmapNode(self.segmentationNode, labelmapVolumeNode, self.VolumeNode)   
-      self.outputSegmFileNifti = os.path.join(self.output_dir_labels_nii,"{}_{}.nii.gz".format(self.ICH_segm_name, annotator_name))
-      slicer.util.saveNode(labelmapVolumeNode, self.outputSegmFileNifti)
-      #Saving messages
-      print((f'Saving case : {self.VolumeNode.GetName()}'))
-      self.ui.CurrentSegmenationLabel.setText(f'Case {self.VolumeNode.GetName()} saved !')
-      
+          if not self.annotator_name:
+              print('Empty annotator name !!!')
+              msgboxtime = qt.QMessageBox()
+              msgboxtime.setText("Segmentation not saved : no annotator name !  \n Please save again with your name!")
+              msgboxtime.exec()
+          elif self.time is None:
+              print('You did not start the timer !!!')
+              msgboxtime = qt.QMessageBox()
+              msgboxtime.setText(
+                  "You did not start a timed segmentation. \n Please press the 'New ICH segm' button to start a timed segmentation")
+              msgboxtime.exec()
+
+
       try:
         self.SlicerVolumeName = re.findall('Volume_(ID_[a-zA-Z\d]+)', self.VolumeNode.GetName())[0]
         print(f'Volume Node accoding to slicer :: {self.SlicerVolumeName}')
@@ -378,14 +617,36 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
         print('Matched Volume number (sanity check)!')
       except AssertionError as e:
         print('Mismatch in case error :: {}'.format(str(e)))
-        
+
+
+
+  # ----- ANW Addition ----- : Actions for pop-up message box buttons
+  def msg1_clicked(self, msg1_button):
+      if msg1_button.text == 'OK':
+          self.df.to_csv(self.outputTimeFile)
+      else:
+          return
+
+  def msg2_clicked(self, msg2_button):
+      if msg2_button.text == 'OK':
+          slicer.util.saveNode(self.segmentationNode, self.outputSegmFile)
+      else:
+          return
+
+  def msg3_clicked(self, msg3_button):
+      if msg3_button.text == 'OK':
+          slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
+      else:
+          return
       
   def onBrowseFolders_2Button(self):
       self.predictionFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
+
       self.predictions_paths = sorted(glob(os.path.join(self.predictionFolder, f'{SEGM_FILE_TYPE}')))
       print(self.predictions_paths)
+
       try:
-        assert len(self.CasesPaths)==len(self.predictions_paths)
+        assert len(self.CasesPaths) == (len(self.predictions_paths) or len(self.predictions_paths_NIFTI))
       except AssertionError as e:
         print('Not the same number of Volumes and predictions !')
         msgboxpred = qt.QMessageBox()
@@ -397,20 +658,22 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
   def onLoadPredictionButton(self): 
       # Get list of prediction names
       try:
-        self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_ICH_pred.seg.nrrd',os.path.split(i)[-1])  for i in self.predictions_paths])
+        self.predictions_names = sorted([re.findall(r'(ID_[a-zA-Z\d]+)_ICH_predictions.seg.nrrd',os.path.split(i)[-1]) for i in self.predictions_paths])
         print(self.predictions_names)
+        self.called = False # restart timer
       except AttributeError as e:
-            msgnopredloaded=qt.QMessapgeBox()
+            msgnopredloaded=qt.QMessageBox() # Typo correction
             msgnopredloaded.setText('Please select the prediction directory!')
             msgnopredloaded.exec()
             # Then load the browse folder thing for the user
             self.onBrowseFolders_2Button()
       # Match the prediction names that corresponds to the loaded segmentatiion
-      self.currentPrediction_Index,self.currentPrediction_ID = [(i,j) for i,j in enumerate(self.predictions_names) if j == self.currentCase][0]
+      # self.currentPrediction_Index, self.currentPrediction_ID = [(i,j) for i,j in enumerate(self.predictions_names) if j == self.currentCase][0]
+      self.currentPrediction_Index, self.currentPrediction_ID = [(i, self.predictions_names[i]) for i in range(len(self.predictions_names)) if i == self.currentCase_index][0] # return a list of tuples
       print(f'Current case :: {self.currentCase}')
-      print(f'Current pred ID :: {self.currentPrediction_ID }')
+      print(f'Current prediction ID :: {self.currentPrediction_ID }')
       print(f'Current case index :: {self.currentCase_index}')
-      print(f'Current pred index :: {self.currentPrediction_Index}')
+      print(f'Current prediction index :: {self.currentPrediction_Index}')
       
       self.currentPredictionPath = self.predictions_paths[self.currentCase_index]
       # print(self.currentPrediction_ID)
@@ -449,19 +712,11 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       sc = shn.GetSceneItemID()
       shn.GetItemChildren(sc, items, True)
       self.ICH_segment_name = shn.GetItemName(items.GetId(2))
-      print(f'Segment name {self.ICH_segment_name}')
+      print(f'Segment name :: {self.ICH_segment_name}')
       self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
       self.updateCurrentSegmenationLabel()
       # Start timer
       self.startTimer()
-      
- 
-      
-
-      
-      
-        
-      
       
       # # Set to erase then paint (so you can use the space bar)
       # segmentEditorWidget.setActiveEffectByName("Erase")
@@ -496,6 +751,24 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
   #     print('ICH segment name::: {}'.format(self.ICH_segment_name))
   #     self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
       #Set mask mode (DOES NOT WORK ???????)
+
+  def onSegmendEditorPushButton(self):
+
+      if self.ui.SegmentWindowPushButton.isChecked():
+          self.ui.SegmentWindowPushButton.setStyleSheet("background-color : gray")
+          self.ui.SegmentWindowPushButton.setText('Undock Segment Editor')
+          slicer.modules.segmenteditor.widgetRepresentation().setParent(None)
+          slicer.modules.segmenteditor.widgetRepresentation().show()
+
+      # if it is unchecked (default)
+      else:
+          self.ui.SegmentWindowPushButton.setStyleSheet("background-color : lightgray")
+          self.ui.SegmentWindowPushButton.setText('Dock Segment Editor')
+          slicer.modules.segmenteditor.widgetRepresentation().setParent(slicer.util.mainWindow())
+
+
+      # self.ui.SegmentWindowPushButton.show()
+
 
   def onPushButton_1(self):
       print('PushButton_1 pressed')
@@ -539,6 +812,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
 
 
+
   def onPushButton_2(self):
       # Remove fill
       # segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
@@ -550,6 +824,18 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
   def onPushButton_3(self):
   #     # Add fill
       self.segmentationNode.GetDisplayNode().SetOpacity2DFill(100)
+
+  def toggleFillButton(self):
+      if self.ui.pushButton_ToggleFill.isChecked():
+          self.ui.pushButton_ToggleFill.setStyleSheet("background-color : lightgreen")
+          self.ui.pushButton_ToggleFill.setText('Fill ON')
+          self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
+      # if it is unchecked
+      else:
+          self.ui.pushButton_ToggleFill.setStyleSheet("background-color : indianred")
+          self.ui.pushButton_ToggleFill.setText('Fill OFF')
+          self.segmentationNode.GetDisplayNode().SetOpacity2DFill(100)
+
 
   def onPushButton_4(self):
       self.segmentEditorWidget.setActiveEffectByName("Paint")

@@ -129,17 +129,17 @@
               </item>
               <item>
                <property name="text">
-                <string>First</string>
+                <string>0 - First</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string>Revision</string>
+                <string>1 - Revision</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string>Final</string>
+                <string>2 - Final</string>
                </property>
               </item>
              </widget>
@@ -183,7 +183,7 @@
         <item>
          <widget class="QLabel" name="CurrentSegmenationLabel">
           <property name="text">
-           <string>Current Segmenation Label:</string>
+           <string>Current Segmentation Label:</string>
           </property>
          </widget>
         </item>
@@ -196,22 +196,8 @@
         </item>
        </layout>
       </item>
-      <item row="5" column="1">
-       <widget class="QPushButton" name="pushButton_15">
-        <property name="text">
-         <string>New SDH segm</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="1">
-       <widget class="QPushButton" name="pushButton_13">
-        <property name="text">
-         <string>New EDH segm</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QPushButton" name="LoadPrediction">
+      <item row="7" column="1">
+       <widget class="QPushButton" name="SaveSegmentationButton">
         <property name="font">
          <font>
           <weight>75</weight>
@@ -219,51 +205,24 @@
          </font>
         </property>
         <property name="statusTip">
-         <string>Timer started</string>
+         <string>Saving segmentation</string>
         </property>
         <property name="text">
-         <string>Load prediction</string>
+         <string>Save segmentation</string>
+        </property>
+        <property name="shortcut">
+         <string>Ctrl+S</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="0" rowspan="7">
-       <widget class="QScrollArea" name="scrollArea">
-        <property name="widgetResizable">
-         <bool>true</bool>
-        </property>
-        <widget class="QWidget" name="scrollAreaWidgetContents">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>387</width>
-           <height>200</height>
-          </rect>
-         </property>
-         <widget class="QListWidget" name="SlicerDirectoryListView">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>0</y>
-            <width>301</width>
-            <height>201</height>
-           </rect>
-          </property>
-          <property name="selectionRectVisible">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </widget>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QPushButton" name="NewICHSegm">
+      <item row="5" column="1">
+       <widget class="QPushButton" name="pushButton_15">
         <property name="text">
-         <string>New ICH segm</string>
+         <string>New SDH segm</string>
         </property>
        </widget>
       </item>
-      <item row="8" column="0" colspan="2">
+      <item row="10" column="0" colspan="2">
        <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton">
         <property name="text">
          <string>Hemorrhage</string>
@@ -307,9 +266,18 @@
             </widget>
            </item>
            <item row="0" column="5">
-            <widget class="QRadioButton" name="radioButton">
+            <widget class="QRadioButton" name="radioButton_Edema">
              <property name="text">
-              <string>None</string>
+              <string>Edema</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+             <property name="checked">
+              <bool>false</bool>
+             </property>
+             <property name="autoExclusive">
+              <bool>false</bool>
              </property>
             </widget>
            </item>
@@ -318,8 +286,22 @@
         </layout>
        </widget>
       </item>
-      <item row="7" column="1">
-       <widget class="QPushButton" name="SaveSegmentationButton">
+      <item row="4" column="1">
+       <widget class="QPushButton" name="pushButton_14">
+        <property name="text">
+         <string>New SAH segm</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QPushButton" name="NewICHSegm">
+        <property name="text">
+         <string>New ICH segm</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="LoadPrediction">
         <property name="font">
          <font>
           <weight>75</weight>
@@ -327,13 +309,146 @@
          </font>
         </property>
         <property name="statusTip">
-         <string>Saving segmentation</string>
+         <string>Timer started</string>
         </property>
         <property name="text">
-         <string>Save segmentation</string>
+         <string>Load prediction</string>
         </property>
-        <property name="shortcut">
-         <string>Ctrl+S</string>
+       </widget>
+      </item>
+      <item row="11" column="0" colspan="2">
+       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2">
+        <property name="text">
+         <string>Tools</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_6">
+         <item row="1" column="0">
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="4" column="1">
+            <widget class="QPushButton" name="pushButton_8">
+             <property name="text">
+              <string>Remove mask</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QPushButton" name="pushButton_6">
+             <property name="text">
+              <string>Smooth margins</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QSpinBox" name="spinBox_2"/>
+           </item>
+           <item row="4" column="0">
+            <widget class="QPushButton" name="pushButton_7">
+             <property name="text">
+              <string>Add mask</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QPushButton" name="pushButton_ToggleFill">
+             <property name="text">
+              <string>Fill OFF</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1" colspan="2">
+            <widget class="QPushButton" name="pushButton_11">
+             <property name="text">
+              <string>Toggle segm editor (undo)</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QPushButton" name="pushButton_5">
+             <property name="text">
+              <string>Erase mode</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QPushButton" name="pushButton_4">
+             <property name="text">
+              <string>Paint without mask</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QSpinBox" name="spinBox">
+             <property name="toolTip">
+              <string extracomment="testtool tip coment"/>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="2">
+            <widget class="QPushButton" name="pushButton_9">
+             <property name="text">
+              <string>Remove small holes</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="pushButton_2">
+             <property name="autoFillBackground">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Remove fill</string>
+             </property>
+             <property name="checkable">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QPushButton" name="pushButton_10">
+             <property name="text">
+              <string>PushButton_10</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QPushButton" name="pushButton_3">
+             <property name="text">
+              <string>Add fill</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QPushButton" name="pushButton_1">
+             <property name="text">
+              <string>Paint with mask</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="0">
+          <widget class="QPushButton" name="SegmentWindowPushButton">
+           <property name="text">
+            <string>Dock Segment Editor</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="8" column="1">
+       <widget class="QLCDNumber" name="lcdNumber"/>
+      </item>
+      <item row="6" column="1">
+       <widget class="QPushButton" name="pushButton_13">
+        <property name="text">
+         <string>New EDH segm</string>
         </property>
        </widget>
       </item>
@@ -344,118 +459,44 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="1">
-       <widget class="QPushButton" name="pushButton_14">
+      <item row="9" column="1">
+       <widget class="QPushButton" name="PauseTimerButton">
         <property name="text">
-         <string>New SAH segm</string>
+         <string>Pause</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
-      <item row="9" column="0" colspan="2">
-       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_2">
-        <property name="text">
-         <string>Tools</string>
+      <item row="1" column="0" rowspan="9">
+       <widget class="QScrollArea" name="scrollArea">
+        <property name="widgetResizable">
+         <bool>true</bool>
         </property>
-        <layout class="QGridLayout" name="gridLayout_6">
-         <item row="0" column="0">
-          <layout class="QGridLayout" name="gridLayout">
-           <item row="2" column="0">
-            <widget class="QPushButton" name="pushButton_4">
-             <property name="text">
-              <string>Paint without mask</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QSpinBox" name="spinBox">
-             <property name="toolTip">
-              <string extracomment="testtool tip coment"/>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="2">
-            <widget class="QPushButton" name="pushButton_6">
-             <property name="text">
-              <string>Smooth margins</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="pushButton_2">
-             <property name="text">
-              <string>Remove fill</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <widget class="QPushButton" name="pushButton_8">
-             <property name="text">
-              <string>Remove mask</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QSpinBox" name="spinBox_2"/>
-           </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="pushButton_3">
-             <property name="text">
-              <string>Add fill</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="2">
-            <widget class="QPushButton" name="pushButton_9">
-             <property name="text">
-              <string>Remove small holes</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QPushButton" name="pushButton_1">
-             <property name="text">
-              <string>Paint with mask</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QPushButton" name="pushButton_5">
-             <property name="text">
-              <string>Erase mode</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="0">
-            <widget class="QPushButton" name="pushButton_10">
-             <property name="text">
-              <string>PushButton_10</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="2">
-            <widget class="QPushButton" name="pushButton_ToggleFill">
-             <property name="text">
-              <string>Toggle fill on off</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QPushButton" name="pushButton_7">
-             <property name="text">
-              <string>Add mask</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="1" colspan="2">
-            <widget class="QPushButton" name="pushButton_11">
-             <property name="text">
-              <string>Toggle segm editor (undo)</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
+        <widget class="QWidget" name="scrollAreaWidgetContents">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>387</width>
+           <height>294</height>
+          </rect>
+         </property>
+         <widget class="QListWidget" name="SlicerDirectoryListView">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>301</width>
+            <height>201</height>
+           </rect>
+          </property>
+          <property name="selectionRectVisible">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </widget>
        </widget>
       </item>
      </layout>
