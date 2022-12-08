@@ -14,7 +14,6 @@ import pandas as pd
 from datetime import datetime
 
 
-
 VOLUME_FILE_TYPE = '*.nrrd' 
 SEGM_FILE_TYPE = '*.seg.nrrd'
 
@@ -161,30 +160,36 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
     self.ui.LoadPrediction.connect('clicked(bool)', self.onLoadPredictionButton)
     self.ui.Previous.connect('clicked(bool)', self.onPreviousButton)
     self.ui.Next.connect('clicked(bool)', self.onNextButton)
-    self.ui.pushButton_1.connect('clicked(bool)', self.onPushButton_1)
-    self.ui.pushButton_2.connect('clicked(bool)', self.onPushButton_2)
-    self.ui.pushButton_3.connect('clicked(bool)', self.onPushButton_3)  
+    self.ui.pushButton_Paint.connect('clicked(bool)', self.onPushButton_Paint)
     self.ui.pushButton_4.connect('clicked(bool)', self.onPushButton_4)  
-    self.ui.pushButton_5.connect('clicked(bool)', self.onPushButton_5)  
-    self.ui.pushButton_6.connect('clicked(bool)', self.onPushButton_6)  
-    self.ui.pushButton_7.connect('clicked(bool)', self.onPushButton_7)  
-    self.ui.pushButton_8.connect('clicked(bool)', self.onPushButton_8)  
-    self.ui.pushButton_9.connect('clicked(bool)', self.onPushButton_9)  
-    self.ui.pushButton_10.connect('clicked(bool)', self.onPushButton_10)  
-    self.ui.pushButton_11.connect('clicked(bool)', self.onPushButton_11)
+    self.ui.pushButton_Erase.connect('clicked(bool)', self.onPushButton_Erase)  
+    self.ui.pushButton_Smooth.connect('clicked(bool)', self.onPushButton_Smooth)  
+    self.ui.pushButton_Small_holes.connect('clicked(bool)', self.onPushButton_Small_holes)  
+
 
     ### ANW CONNECTIONS
+    # Pause button
     self.ui.PauseTimerButton.connect('clicked(bool)', self.togglePauseTimerButton)
+    self.ui.PauseTimerButton.setStyleSheet("background-color : indianred")
+
+    # Toggle on of fill button
     self.ui.pushButton_ToggleFill.connect('clicked(bool)', self.toggleFillButton)
     self.ui.pushButton_ToggleFill.setStyleSheet("background-color : indianred")
+    # Toggle on of segmentation editor
     self.ui.SegmentWindowPushButton.connect('clicked(bool)', self.onSegmendEditorPushButton)
     self.ui.SegmentWindowPushButton.setStyleSheet("background-color : lightgray")
     self.ui.radioButton_Edema.connect('clicked(bool)', self.onCheckEdema)
+    
+    
+    ### LLG CODE BELOW
+    # Change color of lcd screen
+    self.ui.lcdNumber.setStyleSheet("background-color : black")
 
     # import qSlicerSegmentationsModuleWidgetsPythonQt
     # self.editor = qSlicerSegmentationsModuleWidgetsPythonQt.qMRMLSegmentEditorWidget()
     # self.editor.setMaximumNumberOfUndoStates(10)
     # self.editor.setMRMLScene(slicer.mrmlScene)
+  
 
 
   def getDefaultDir(self):
@@ -200,7 +205,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       print(self.CurrentFolder)
       self.updateCurrentFolder()
       # LLG GET A LIST OF cases WITHIN CURRENT FOLDERS (SUBDIRECTORIES). List comp to get only the case
-      print(f'FDASFASDFSAFSAFASFAS{self.CurrentFolder}{os.sep}{VOLUME_FILE_TYPE}')
+      print(f'{self.CurrentFolder}{os.sep}{VOLUME_FILE_TYPE}')
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{VOLUME_FILE_TYPE}'))
       print('Case paths::::')
       print(self.CasesPaths)
@@ -209,18 +214,25 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       print(self.Cases)
       # Populate the SlicerDirectoryListView
       self.ui.SlicerDirectoryListView.addItems(self.Cases)
+      # List view connection
       self.ui.SlicerDirectoryListView.clicked.connect(self.getCurrentTableItem)
-      # # SET CURRENT INDEX AT 0 ===THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
+      # # SET CURRENT INDEX AT 0 === THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
       self.currentCase_index = 0
       self.updateCaseAll()
       self.loadPatient()
 
-  
+
+      """_summary_
+      2 ways to update self.currentCase_index:
+      1. When the user clicks on the list view
+      2. When the user clicks on the next or previous button
+      """
+
   def updateCaseAll(self):
       # All below is depend on self.currentCase_index updates, 
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
-      self.updateCaseIndex(self.currentCase_index)
+      self.updateCaseIndexQLineEdit(self.currentCase_index)
       self.updateCurrentPatient()
       # self.ui.SlicerDirectoryListView.setCurrentRow(self.currentCase)
 
@@ -231,11 +243,11 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # Below gives the row number == index to be used to select elements in the list
       print(self.ui.SlicerDirectoryListView.currentRow)
       #below we update the case index and we need to pass one parameter to the methods since it takes 2 (1 in addition to self)
-      self.updateCaseIndex(self.ui.SlicerDirectoryListView.currentRow)
+      self.updateCaseIndexQLineEdit(self.ui.SlicerDirectoryListView.currentRow)
       # Update the case index
       self.currentCase_index = self.ui.SlicerDirectoryListView.currentRow
       # Same code in onBrowseFoldersButton, need to update self.currentCase
-      # note that updateCaseAll() not implemented here 
+      # note that updateCaseAll() not implemented here - it is called when a case is selected from the list view or next/previous button is clicked
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
       self.updateCurrentPatient()
@@ -244,7 +256,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # self.updateCurrentFolder()
       # self.loadPatient()
 
-  def updateCaseIndex(self,index):
+  def updateCaseIndexQLineEdit(self,index):
       # ----- ANW Modification ----- : Numerator on UI should start at 1 instead of 0 for coherence
       self.ui.FileIndex.setText('{} / {}'.format(index+1,len(self.Cases)))
 
@@ -274,8 +286,6 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
   def onPreviousButton(self):
       #Code below avoid getting in negative values. 
       self.currentCase_index = max(0,self.currentCase_index-1)
-      # self.updateCaseAll()
-      self.updateCaseAll()
       self.loadPatient()
   
 
@@ -283,53 +293,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       print('Clicked Next Button',self.DefaultDir)
       self.currentCase_index = min(len(self.Cases)+1,self.currentCase_index+1)
       print(self.currentCase_index)
-      # self.updateCaseAll()
-      self.updateCaseAll()
-      # self.currentCase = os.path.join(self.CurrentFolder,self.Cases[self.currentCase_index])
       self.loadPatient()
-
-  # ----- ANW Modification ----- : This code is exactly the same as 2 blocks prior, I commented it
-  # def loadPatient(self):
-  #     slicer.mrmlScene.Clear()
-  #     slicer.util.loadVolume(self.currentCasePath)
-  #     self.VolumeNode = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
-  #     self.updateCaseAll()
-  #     self.ICH_segm_name = None
-  #     self.ui.CurrentSegmenationLabel.setText('New patient loaded - No segmentation created!')
-  #     # Adjust windowing (no need to use self. since this is used locally)
-  #     Vol_displayNode = self.VolumeNode.GetDisplayNode()
-  #     Vol_displayNode.AutoWindowLevelOff()
-  #     Vol_displayNode.SetWindow(85)
-  #     Vol_displayNode.SetLevel(45)
-
-
-  def onNewICHSegm(self):
-      # slicer.util.selectModule("SegmentEditor")
-      self.ICH_segm_name = "{}_ICH".format(self.currentCase)
-      print(f'Segmentation name:: {self.ICH_segm_name}')
-      self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-      self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
-      self.segmentationNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
-      self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
-      # set refenrence geometry to Volume node
-      self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-      #below with add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name
-      self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.ICH_segm_name)
-      #Select Segment (else you need to click on it yourself)
-      shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-      items = vtk.vtkIdList()
-      sc = shn.GetSceneItemID()
-      shn.GetItemChildren(sc, items, True)
-      self.ICH_segment_name = shn.GetItemName(items.GetId(2))
-      self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
-      self.updateCurrentSegmenationLabel()
-      # Toggle paint brush right away. 
-      self.onPushButton_1()
-      self.startTimer()
-
-      # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
-      self.called = False
 
   def onNewICHSegm(self):
       # slicer.util.selectModule("SegmentEditor")
@@ -353,7 +317,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
       self.updateCurrentSegmenationLabel()
       # Toggle paint brush right away.
-      self.onPushButton_1()
+      self.onPushButton_Paint()
       self.startTimer()
 
       # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
@@ -380,7 +344,6 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
   def startTimer(self):
       print('ICH segment name::: {}'.format(self.ICH_segment_name))
       self.counter = 0
-
       self.flag = True
       print("STARTING TIMER !!!!")
 
@@ -390,17 +353,18 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       self.timer.timeout.connect(self.updatelcdNumber)
 
       # Start the timer and update every second
-      self.timer.start(100)
+      self.timer.start(1000) # 1000 ms = 1 second
 
       # Call the updatelcdNumber function
       self.updatelcdNumber()
 
   def updatelcdNumber(self):
       # Get the time
-      if self.flag:
+      if self.flag: # add flag to avoid counting time when user clicks on save segm button
+            # the timer sends a signal every second (1000 ms). 
           self.counter += 1
 
-      self.ui.lcdNumber.display(self.counter/10)
+      self.ui.lcdNumber.display(self.counter)
 
   # def stopTimer(self):
   #     # If already called once (i.e when user pressed save segm button but forgot to annotator name), simply return the time
@@ -489,14 +453,14 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
           msgboxtime.exec()
 
 
-  def onCheckEdema(self):
+  # def onCheckEdema(self):
 
-      if self.ui.radioButton_Edema.isChecked(): # Uncheck autoExclusive in UI or else it will stay checked forever
-          self.edema = self.ui.radioButton_Edema.text
-      else:
-          self.edema = None
+  #     if self.ui.radioButton_Edema.isChecked(): # Uncheck autoExclusive in UI or else it will stay checked forever
+  #         self.edema = self.ui.radioButton_Edema.text
+  #     else:
+  #         self.edema = None
 
-      return self.edema
+  #     return self.edema
 
 
   # ----- Modification -----
@@ -770,60 +734,38 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # self.ui.SegmentWindowPushButton.show()
 
 
-  def onPushButton_1(self):
-      print('PushButton_1 pressed')
-      # code commented out below has been moved above. 
-      # STEP 1
-      # # Create a widget to access the segment editor tools 
-      # self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-      # self.segmentEditorWidget.setMRMLScene(slicer.mrmlScene)
-      # self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
-      # # connect widget to editor node (not sure if need was note doing this in the past)
-      # self.segmentEditorWidget.setMRMLSegmentEditorNode(self.segmentEditorNode)
-      
-      # # STEP 2 
-      # # Get the currently loaded volume node
-      # self.volumeNode =slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')[0]
-      # print(self.volumeNode.GetName())
-      # ## Get the currently loaded segmentation node
-      # self.segmentationNode= slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-      # print(self.segmentationNode.GetName())
-      # # Set the volume and segmentation nodes
-      # self. segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      # self.segmentEditorWidget.setMasterVolumeNode(self.volumeNode)
-      #Bonus if needed (can be runned without the code below)
-      # Get the segment ID (this is going to be used below) - if need to get it check Evernote this is complicated...
-      # self.segid = self.egmentationNode.GetSegmentation().GetSegmentIdBySegmentName('Segment_1')
-      # print(self.segid)
-      # Running the effect:
-      # Select the right effect
-      self.segmentEditorWidget.setActiveEffectByName("Paint")
-      # Note it seems that sometimes you need to activate the effect first with :
-      # Assign effect to the segmentEditorWidget using the active effect
-      self.effect = self.segmentEditorWidget.activeEffect()
-      self.effect.activate()
-      self.effect.setParameter('BrushSphere',1)
-      #Seems that you need to activate the effect to see it in Slicer
-      # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
-      self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
-      #Set if using Editable intensity range (the range is defined below using object.setParameter)
-      self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-      self.segmentEditorNode.SetMasterVolumeIntensityMaskRange(37, 100)
-      self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
+  def onPushButton_Paint(self):
+      if self.ui.pushButton_Paint.isChecked():
+          self.ui.pushButton_Paint.setStyleSheet("background-color : lightgreen")
+          self.ui.pushButton_Paint.setText('Paint Mask ON')
+          self.segmentEditorWidget.setActiveEffectByName("Paint")
+          # Note it seems that sometimes you need to activate the effect first with :
+          # Assign effect to the segmentEditorWidget using the active effect
+          self.effect = self.segmentEditorWidget.activeEffect()
+          self.effect.activate()
+          self.effect.setParameter('BrushSphere',1)
+          #Seems that you need to activate the effect to see it in Slicer
+          # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
+          self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
+          #Set if using Editable intensity range (the range is defined below using object.setParameter)
+          self.segmentEditorNode.SetSourceVolumeIntensityMask(True)
+          self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(37, 100)
+          self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
+      else:
+          self.ui.pushButton_Paint.setStyleSheet("background-color : indianred")
+          self.ui.pushButton_Paint.setText('Paint Mask OFF')
+          self.segmentEditorWidget.setActiveEffectByName("Paint")
+          self.effect = self.segmentEditorWidget.activeEffect()
+          #Seems that you need to activate the effect to see it in Slicer
+          self.effect.activate()
+          # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
+          self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
+          #Set if using Editable intensity range (the range is defined below using object.setParameter)
+          self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
+          self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
+            
 
 
-
-  def onPushButton_2(self):
-      # Remove fill
-      # segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-      # segmentEditorWidget.setSegmentationNode(self.Segmentation)
-      # segmentEditorWidget.setMasterVolumeNode(self.Volume)
-      # segmentationNode = slicer.util.getNode("vtkMRMLSegmentationNode1")
-      self.segmentationNode.GetDisplayNode().SetOpacity2DFill(0)
-
-  def onPushButton_3(self):
-  #     # Add fill
-      self.segmentationNode.GetDisplayNode().SetOpacity2DFill(100)
 
   def toggleFillButton(self):
       if self.ui.pushButton_ToggleFill.isChecked():
@@ -836,34 +778,40 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
           self.ui.pushButton_ToggleFill.setText('Fill OFF')
           self.segmentationNode.GetDisplayNode().SetOpacity2DFill(100)
 
+  def togglePaintMask(self):
+        if self.ui.pushButton_TogglePaintMask.isChecked():
+            self.ui.pushButton_TogglePaintMask.setStyleSheet("background-color : lightgreen")
+            self.ui.pushButton_TogglePaintMask.setText('Paint Mask ON')
+            self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
+
 
   def onPushButton_4(self):
-      self.segmentEditorWidget.setActiveEffectByName("Paint")
-      # Note it seems that sometimes you need to activate the effect first with :
-      # Assign effect to the segmentEditorWidget using the active effect
-      self.effect = self.segmentEditorWidget.activeEffect()
-      #Seems that you need to activate the effect to see it in Slicer
-      self.effect.activate()
-      # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
-      self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
-      #Set if using Editable intensity range (the range is defined below using object.setParameter)
-      self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
-      self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
-      # Paint mode
-      # # Note I added self for segment editor widget but not for the other in an attempt to be able to undo on the same instance...last button... does not workd
-      # self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-      # self.segmentEditorWidget.setSegmentationNode(self.Segmentation)
-      # self.segmentEditorWidget.setMasterVolumeNode(self.Volume)
-      # segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
-      # segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentEditorNode.PaintAllowedEverywhere)
-      # #Set if using Editable intensity range (the range is defined below using object.setParameter)
-      # segmentEditorNode.SetMasterVolumeIntensityMask(False)
-      # # Set to erase then paint (so you can use the space bar)
-      # self.segmentEditorWidget.setActiveEffectByName("Paint")
-      # effect = self.segmentEditorWidget.activeEffect()
-      # effect.setParameter('BrushSphere', 0) 
+        self.segmentEditorWidget.setActiveEffectByName("Paint")
+        # Note it seems that sometimes you need to activate the effect first with :
+        # Assign effect to the segmentEditorWidget using the active effect
+        self.effect = self.segmentEditorWidget.activeEffect()
+        #Seems that you need to activate the effect to see it in Slicer
+        self.effect.activate()
+        # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
+        self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
+        #Set if using Editable intensity range (the range is defined below using object.setParameter)
+        self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
+        self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
+        # Paint mode
+        # # Note I added self for segment editor widget but not for the other in an attempt to be able to undo on the same instance...last button... does not workd
+        # self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+        # self.segmentEditorWidget.setSegmentationNode(self.Segmentation)
+        # self.segmentEditorWidget.setMasterVolumeNode(self.Volume)
+        # segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
+        # segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentEditorNode.PaintAllowedEverywhere)
+        # #Set if using Editable intensity range (the range is defined below using object.setParameter)
+        # segmentEditorNode.SetMasterVolumeIntensityMask(False)
+        # # Set to erase then paint (so you can use the space bar)
+        # self.segmentEditorWidget.setActiveEffectByName("Paint")
+        # effect = self.segmentEditorWidget.activeEffect()
+        # effect.setParameter('BrushSphere', 0) 
 
-  def onPushButton_5(self):
+  def onPushButton_Erase(self):
       self.segmentEditorWidget.setActiveEffectByName("Erase")
       # Note it seems that sometimes you need to activate the effect first with :
       # Assign effect to the segmentEditorWidget using the active effect
@@ -872,7 +820,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       self.effect.activate()
       self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
 
-  def onPushButton_6(self):
+  def onPushButton_Smooth(self):
       # pass
       # Smoothing
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
@@ -882,31 +830,31 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       effect.setParameter("KernelSizeMm", 3)
       effect.self().onApply()
 
-  def onPushButton_7(self):
-      # pass
-      #Set mask mode
-      self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-      self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
-      self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
-      #Set if using Editable intensity range (the range is defined below using object.setParameter)
-      self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-      self.segmentEditorNode.SetMasterVolumeIntensityMaskRange(40, 90)
-      #Set overwrite options
-      self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteNone)
+  # def onPushButton_7(self):
+  #     # pass
+  #     #Set mask mode
+  #     self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+  #     self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
+  #     self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
+  #     #Set if using Editable intensity range (the range is defined below using object.setParameter)
+  #     self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+  #     self.segmentEditorNode.SetMasterVolumeIntensityMaskRange(40, 90)
+  #     #Set overwrite options
+  #     self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteNone)
 
-  def onPushButton_8(self):
-      # pass
-      # REMOVE MASK
-      # Set mask mode
-      segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-      segmentEditorNode = segmentEditorWidget.mrmlSegmentEditorNode()
-      segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
-      #Set if using Editable intensity range (the range is defined below using object.setParameter)
-      segmentEditorNode.SetMasterVolumeIntensityMask(False)
-      #Set overwrite options
-      segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteNone)
+  # def onPushButton_8(self):
+  #     # pass
+  #     # REMOVE MASK
+  #     # Set mask mode
+  #     segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+  #     segmentEditorNode = segmentEditorWidget.mrmlSegmentEditorNode()
+  #     segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
+  #     #Set if using Editable intensity range (the range is defined below using object.setParameter)
+  #     segmentEditorNode.SetMasterVolumeIntensityMask(False)
+  #     #Set overwrite options
+  #     segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteNone)
       
-  def onPushButton_9(self):
+  def onPushButton_Small_holes(self):
       # pass
       # Fill holes smoothing
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
@@ -916,7 +864,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       effect.setParameter("KernelSizeMm", 3)
       effect.self().onApply()
 
-  def onPushButton_11(self):
+  def onPushButton_Paint1(self):
       # Toggle segement editor
       # Set segment editor and get the right segmentations
       slicer.util.selectModule("SegmentEditor")
@@ -924,7 +872,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # segmentEditorWidget.setSegmentationNode(self.Segmentation)
       # segmentEditorWidget.setMasterVolumeNode(self.Volume)
       
-  def onPushButton_10(self):
+  def onPushButton_Paint0(self):
       pass
 
   def onToggleFill(self):
@@ -934,67 +882,67 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
 
 #
 # ICH_SEGMENTER_2022_08Logic
-#
+# #
 
-class ICH_SEGMENTER_2022_08Logic(ScriptedLoadableModuleLogic):
-  """This class should implement all the actual
-  computation done by your module.  The interface
-  should be such that other python code can import
-  this class and make use of the functionality without
-  requiring an instance of the Widget.
-  Uses ScriptedLoadableModuleLogic base class, available at:
-  https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
-  """
+# class ICH_SEGMENTER_2022_08Logic(ScriptedLoadableModuleLogic):
+#   """This class should implement all the actual
+#   computation done by your module.  The interface
+#   should be such that other python code can import
+#   this class and make use of the functionality without
+#   requiring an instance of the Widget.
+#   Uses ScriptedLoadableModuleLogic base class, available at:
+#   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
+#   """
 
-  def __init__(self):
-    """
-    Called when the logic class is instantiated. Can be used for initializing member variables.
-    """
-    ScriptedLoadableModuleLogic.__init__(self)
+#   def __init__(self):
+#     """
+#     Called when the logic class is instantiated. Can be used for initializing member variables.
+#     """
+#     ScriptedLoadableModuleLogic.__init__(self)
 
-  def setDefaultParameters(self, parameterNode):
-    """
-    Initialize parameter node with default settings.
-    """
-    if not parameterNode.GetParameter("Threshold"):
-      parameterNode.SetParameter("Threshold", "100.0")
-    if not parameterNode.GetParameter("Invert"):
-      parameterNode.SetParameter("Invert", "false")
+#   def setDefaultParameters(self, parameterNode):
+#     """
+#     Initialize parameter node with default settings.
+#     """
+#     if not parameterNode.GetParameter("Threshold"):
+#       parameterNode.SetParameter("Threshold", "100.0")
+#     if not parameterNode.GetParameter("Invert"):
+#       parameterNode.SetParameter("Invert", "false")
 
-  def process(self, inputVolume, outputVolume, imageThreshold, invert=False, showResult=True):
-    """
-    Run the processing algorithm.
-    Can be used without GUI widget.
-    :param inputVolume: volume to be thresholded
-    :param outputVolume: thresholding result
-    :param imageThreshold: values above/below this threshold will be set to 0
-    :param invert: if True then values above the threshold will be set to 0, otherwise values below are set to 0
-    :param showResult: show output volume in slice viewers
-    """
+#   def process(self, inputVolume, outputVolume, imageThreshold, invert=False, showResult=True):
+#     """
+#     Run the processing algorithm.
+#     Can be used without GUI widget.
+#     :param inputVolume: volume to be thresholded
+#     :param outputVolume: thresholding result
+#     :param imageThreshold: values above/below this threshold will be set to 0
+#     :param invert: if True then values above the threshold will be set to 0, otherwise values below are set to 0
+#     :param showResult: show output volume in slice viewers
+#     """
 
-    if not inputVolume or not outputVolume:
-      raise ValueError("Input or output volume is invalid")
+#     if not inputVolume or not outputVolume:
+#       raise ValueError("Input or output volume is invalid")
 
-    import time
-    startTime = time.time()
-    logging.info('Processing started')
+#     import time
+#     startTime = time.time()
+#     logging.info('Processing started')
 
-    # Compute the thresholded output volume using the "Threshold Scalar Volume" CLI module
-    cliParams = {
-      'InputVolume': inputVolume.GetID(),
-      'OutputVolume': outputVolume.GetID(),
-      'ThresholdValue' : imageThreshold,
-      'ThresholdType' : 'Above' if invert else 'Below'
-      }
-    cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True, update_display=showResult)
-    # We don't need the CLI module node anymore, remove it to not clutter the scene with it
-    slicer.mrmlScene.RemoveNode(cliNode)
+#     # Compute the thresholded output volume using the "Threshold Scalar Volume" CLI module
+#     cliParams = {
+#       'InputVolume': inputVolume.GetID(),
+#       'OutputVolume': outputVolume.GetID(),
+#       'ThresholdValue' : imageThreshold,
+#       'ThresholdType' : 'Above' if invert else 'Below'
+#       }
+#     cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True, update_display=showResult)
+#     # We don't need the CLI module node anymore, remove it to not clutter the scene with it
+#     slicer.mrmlScene.RemoveNode(cliNode)
 
-    stopTime = time.time()
-    logging.info(f'Processing completed in {stopTime-startTime:.2f} seconds')
+#     stopTime = time.time()
+#     logging.info(f'Processing completed in {stopTime-startTime:.2f} seconds')
 
 
-#
+# #
 # ICH_SEGMENTER_2022_08Test
 #
 
