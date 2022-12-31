@@ -324,27 +324,23 @@
         <layout class="QGridLayout" name="gridLayout_6">
          <item row="1" column="0">
           <layout class="QGridLayout" name="gridLayout">
-           <item row="4" column="1">
-            <widget class="QPushButton" name="pushButton_8">
+           <item row="1" column="0">
+            <widget class="QPushButton" name="pushButton_Paint">
              <property name="text">
-              <string>Remove mask</string>
+              <string>Paint with mask</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
            <item row="3" column="2">
-            <widget class="QPushButton" name="pushButton_6">
+            <widget class="QPushButton" name="pushButton_Smooth">
              <property name="text">
               <string>Smooth margins</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QSpinBox" name="spinBox_2"/>
-           </item>
-           <item row="4" column="0">
-            <widget class="QPushButton" name="pushButton_7">
-             <property name="text">
-              <string>Add mask</string>
              </property>
             </widget>
            </item>
@@ -358,24 +354,10 @@
              </property>
             </widget>
            </item>
-           <item row="5" column="1" colspan="2">
-            <widget class="QPushButton" name="pushButton_11">
-             <property name="text">
-              <string>Toggle segm editor (undo)</string>
-             </property>
-            </widget>
-           </item>
            <item row="3" column="1">
-            <widget class="QPushButton" name="pushButton_5">
+            <widget class="QPushButton" name="pushButton_Small_holes">
              <property name="text">
-              <string>Erase mode</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QPushButton" name="pushButton_4">
-             <property name="text">
-              <string>Paint without mask</string>
+              <string>Remove small holes</string>
              </property>
             </widget>
            </item>
@@ -386,44 +368,20 @@
              </property>
             </widget>
            </item>
-           <item row="4" column="2">
-            <widget class="QPushButton" name="pushButton_9">
+           <item row="2" column="1">
+            <widget class="QSpinBox" name="spinBox_2"/>
+           </item>
+           <item row="1" column="2">
+            <widget class="QPushButton" name="pushButton_Erase">
              <property name="text">
-              <string>Remove small holes</string>
+              <string>Erase mode</string>
              </property>
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QPushButton" name="pushButton_2">
-             <property name="autoFillBackground">
-              <bool>false</bool>
-             </property>
+            <widget class="QPushButton" name="pushButton_4">
              <property name="text">
-              <string>Remove fill</string>
-             </property>
-             <property name="checkable">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="0">
-            <widget class="QPushButton" name="pushButton_10">
-             <property name="text">
-              <string>PushButton_10</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="2">
-            <widget class="QPushButton" name="pushButton_3">
-             <property name="text">
-              <string>Add fill</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QPushButton" name="pushButton_1">
-             <property name="text">
-              <string>Paint with mask</string>
+              <string>Paint without mask</string>
              </property>
             </widget>
            </item>
@@ -479,8 +437,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>387</width>
-           <height>294</height>
+           <width>385</width>
+           <height>339</height>
           </rect>
          </property>
          <widget class="QListWidget" name="SlicerDirectoryListView">

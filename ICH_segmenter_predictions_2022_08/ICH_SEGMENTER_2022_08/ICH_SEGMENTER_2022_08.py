@@ -214,7 +214,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       print(self.Cases)
       # Populate the SlicerDirectoryListView
       self.ui.SlicerDirectoryListView.addItems(self.Cases)
-      # List view connection
+      # List view s
       self.ui.SlicerDirectoryListView.clicked.connect(self.getCurrentTableItem)
       # # SET CURRENT INDEX AT 0 === THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
       self.currentCase_index = 0
@@ -291,9 +291,13 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
 
   def onNextButton(self):
       print('Clicked Next Button',self.DefaultDir)
-      self.currentCase_index = min(len(self.Cases)+1,self.currentCase_index+1)
+      print(f'Current case :: {self.currentCase}')
+      self.currentCase_index +=1
+      self.currentCase_index = min(len(self.Cases)+1,self.currentCase_index)
       print(self.currentCase_index)
+      print(f'Current case index:: {self.currentCase_index}')
       self.loadPatient()
+      
 
   def onNewICHSegm(self):
       # slicer.util.selectModule("SegmentEditor")
@@ -353,7 +357,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       self.timer.timeout.connect(self.updatelcdNumber)
 
       # Start the timer and update every second
-      self.timer.start(1000) # 1000 ms = 1 second
+      self.timer.start(100) # 1000 ms = 1 second
 
       # Call the updatelcdNumber function
       self.updatelcdNumber()
@@ -362,9 +366,9 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # Get the time
       if self.flag: # add flag to avoid counting time when user clicks on save segm button
             # the timer sends a signal every second (1000 ms). 
-          self.counter += 1
+          self.counter += 1  # the self.timer.timeout.connect(self.updatelcdNumber) function is called every second and updates the counter
 
-      self.ui.lcdNumber.display(self.counter)
+      self.ui.lcdNumber.display(self.counter/10)
 
   # def stopTimer(self):
   #     # If already called once (i.e when user pressed save segm button but forgot to annotator name), simply return the time
@@ -453,14 +457,14 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
           msgboxtime.exec()
 
 
-  # def onCheckEdema(self):
+  def onCheckEdema(self):
 
-  #     if self.ui.radioButton_Edema.isChecked(): # Uncheck autoExclusive in UI or else it will stay checked forever
-  #         self.edema = self.ui.radioButton_Edema.text
-  #     else:
-  #         self.edema = None
+      if self.ui.radioButton_Edema.isChecked(): # Uncheck autoExclusive in UI or else it will stay checked forever
+          self.edema = self.ui.radioButton_Edema.text
+      else:
+          self.edema = None
 
-  #     return self.edema
+      return self.edema
 
 
   # ----- Modification -----
