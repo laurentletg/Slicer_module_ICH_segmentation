@@ -243,7 +243,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # Below gives the row number == index to be used to select elements in the list
       print(self.ui.SlicerDirectoryListView.currentRow)
       #below we update the case index and we need to pass one parameter to the methods since it takes 2 (1 in addition to self)
-      self.updateCaseIndexQLineEdit(self.ui.SlicerDirectoryListView.currentRow)
+      self.updateCaseIndex(self.ui.SlicerDirectoryListView.currentRow) # Index starts at 0
       # Update the case index
       self.currentCase_index = self.ui.SlicerDirectoryListView.currentRow
       # Same code in onBrowseFoldersButton, need to update self.currentCase
@@ -256,9 +256,12 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # self.updateCurrentFolder()
       # self.loadPatient()
 
-  def updateCaseIndexQLineEdit(self,index):
+      # ----- ANW Addition ----- : Reset timer when change case
+      self.resetTimer()
+
+  def updateCaseIndex(self, index):
       # ----- ANW Modification ----- : Numerator on UI should start at 1 instead of 0 for coherence
-      self.ui.FileIndex.setText('{} / {}'.format(index+1,len(self.Cases)))
+      self.ui.FileIndex.setText('{} / {}'.format(index+1, len(self.Cases)))
 
   def updateCurrentFolder(self):
       # self.ui.CurrecntFolder.setText(os.path.join(self.CurrentFolder,self.currentCase))
@@ -285,19 +288,59 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
             
   def onPreviousButton(self):
       #Code below avoid getting in negative values. 
-      self.currentCase_index = max(0,self.currentCase_index-1)
+      self.currentCase_index = max(0, self.currentCase_index-1)
+      print('Previous clicked', self.currentCase_index)
+      # self.updateCaseAll()
+      self.updateCaseAll()
       self.loadPatient()
+
+      # ----- ANW Addition ----- : Reset timer when change case
+      self.resetTimer()
   
 
   def onNextButton(self):
-      print('Clicked Next Button',self.DefaultDir)
-      print(f'Current case :: {self.currentCase}')
-      self.currentCase_index +=1
-      self.currentCase_index = min(len(self.Cases)+1,self.currentCase_index)
-      print(self.currentCase_index)
-      print(f'Current case index:: {self.currentCase_index}')
+      print('Clicked Next Button', self.DefaultDir)
+      # ----- ANW Modification ----- : Since index starts at 0, we need to do len(cases)-1 (instead of len(cases)+1).
+      # Ex. if we have 10 cases, then len(case)=10 and index goes from 0-9,
+      # so we have to take the minimum between len(self.Cases)-1 and the currentCase_index (which is incremented by 1 everytime we click the button)
+      self.currentCase_index = min(len(self.Cases)-1, self.currentCase_index+1)
+      print('Next clicked', self.currentCase_index)
+      # self.updateCaseAll()
+      self.updateCaseAll()
+      # self.currentCase = os.path.join(self.CurrentFolder,self.Cases[self.currentCase_index])
       self.loadPatient()
-      
+
+      # ----- ANW Addition ----- : Reset timer when change case
+      self.resetTimer()
+
+
+  def onNewICHSegm(self):
+      # slicer.util.selectModule("SegmentEditor")
+      self.ICH_segm_name = "{}_ICH".format(self.currentCase)
+      print(f'Segmentation name:: {self.ICH_segm_name}')
+      self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+      self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
+      self.segmentationNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
+      self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
+      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
+      # set refenrence geometry to Volume node
+      self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
+      #below with add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name
+      self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.ICH_segm_name)
+      #Select Segment (else you need to click on it yourself)
+      shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+      items = vtk.vtkIdList()
+      sc = shn.GetSceneItemID()
+      shn.GetItemChildren(sc, items, True)
+      self.ICH_segment_name = shn.GetItemName(items.GetId(2))
+      self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
+      self.updateCurrentSegmenationLabel()
+      # Toggle paint brush right away. 
+      self.onPushButton_1()
+      self.startTimer()
+
+      # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
+      self.called = False
 
   def onNewICHSegm(self):
       # slicer.util.selectModule("SegmentEditor")
@@ -402,6 +445,14 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
           except AttributeError as e:
               print(f'!!! YOU DID NOT START THE COUNTER !!! :: {e}')
               return None
+
+  def resetTimer(self):
+      # making flag to false
+      self.flag = False
+
+      # reseting the count
+      self.counter = 0
+
 
   # def togglePauseTimerButton(self):
   #     # if button is checked
