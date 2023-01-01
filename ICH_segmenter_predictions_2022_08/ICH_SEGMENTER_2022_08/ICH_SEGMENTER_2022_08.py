@@ -231,7 +231,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # Below gives the row number == index to be used to select elements in the list
       print(self.ui.SlicerDirectoryListView.currentRow)
       #below we update the case index and we need to pass one parameter to the methods since it takes 2 (1 in addition to self)
-      self.updateCaseIndex(self.ui.SlicerDirectoryListView.currentRow)
+      self.updateCaseIndex(self.ui.SlicerDirectoryListView.currentRow) # Index starts at 0
       # Update the case index
       self.currentCase_index = self.ui.SlicerDirectoryListView.currentRow
       # Same code in onBrowseFoldersButton, need to update self.currentCase
@@ -244,9 +244,12 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # self.updateCurrentFolder()
       # self.loadPatient()
 
-  def updateCaseIndex(self,index):
+      # ----- ANW Addition ----- : Reset timer when change case
+      self.resetTimer()
+
+  def updateCaseIndex(self, index):
       # ----- ANW Modification ----- : Numerator on UI should start at 1 instead of 0 for coherence
-      self.ui.FileIndex.setText('{} / {}'.format(index+1,len(self.Cases)))
+      self.ui.FileIndex.setText('{} / {}'.format(index+1, len(self.Cases)))
 
   def updateCurrentFolder(self):
       # self.ui.CurrecntFolder.setText(os.path.join(self.CurrentFolder,self.currentCase))
@@ -273,20 +276,30 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
             
   def onPreviousButton(self):
       #Code below avoid getting in negative values. 
-      self.currentCase_index = max(0,self.currentCase_index-1)
+      self.currentCase_index = max(0, self.currentCase_index-1)
+      print('Previous clicked', self.currentCase_index)
       # self.updateCaseAll()
       self.updateCaseAll()
       self.loadPatient()
+
+      # ----- ANW Addition ----- : Reset timer when change case
+      self.resetTimer()
   
 
   def onNextButton(self):
-      print('Clicked Next Button',self.DefaultDir)
-      self.currentCase_index = min(len(self.Cases)+1,self.currentCase_index+1)
-      print(self.currentCase_index)
+      print('Clicked Next Button', self.DefaultDir)
+      # ----- ANW Modification ----- : Since index starts at 0, we need to do len(cases)-1 (instead of len(cases)+1).
+      # Ex. if we have 10 cases, then len(case)=10 and index goes from 0-9,
+      # so we have to take the minimum between len(self.Cases)-1 and the currentCase_index (which is incremented by 1 everytime we click the button)
+      self.currentCase_index = min(len(self.Cases)-1, self.currentCase_index+1)
+      print('Next clicked', self.currentCase_index)
       # self.updateCaseAll()
       self.updateCaseAll()
       # self.currentCase = os.path.join(self.CurrentFolder,self.Cases[self.currentCase_index])
       self.loadPatient()
+
+      # ----- ANW Addition ----- : Reset timer when change case
+      self.resetTimer()
 
   # ----- ANW Modification ----- : This code is exactly the same as 2 blocks prior, I commented it
   # def loadPatient(self):
@@ -434,6 +447,14 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
           except AttributeError as e:
               print(f'!!! YOU DID NOT START THE COUNTER !!! :: {e}')
               return None
+
+  def resetTimer(self):
+      # making flag to false
+      self.flag = False
+
+      # reseting the count
+      self.counter = 0
+
 
   # def togglePauseTimerButton(self):
   #     # if button is checked
