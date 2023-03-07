@@ -152,6 +152,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
 
     # Buttons
     ### LLG CONNECTIONS
+    self.ui.PauseTimerButton.setText('Pause')
     self.ui.getDefaultDir.connect('clicked(bool)', self.getDefaultDir)
     self.ui.BrowseFolders.connect('clicked(bool)', self.onBrowseFoldersButton)
     self.ui.NewICHSegm.connect('clicked(bool)', self.onNewICHSegm)
@@ -232,7 +233,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # All below is depend on self.currentCase_index updates, 
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
-      self.updateCaseIndexQLineEdit(self.currentCase_index)
+    #   self.updateCaseIndexQLineEdit(self.currentCase_index)
       self.updateCurrentPatient()
       # self.ui.SlicerDirectoryListView.setCurrentRow(self.currentCase)
 
@@ -483,7 +484,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # if it is unchecked
       else:
           # set background color back to light-grey
-          self.ui.PauseTimerButton.setStyleSheet("background-color : lightgrey")
+          self.ui.PauseTimerButton.setStyleSheet("background-color : indianred")
           self.ui.PauseTimerButton.setText('Pause')
           self.timer.start(100)
           self.flag = True
@@ -804,7 +805,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
           self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
           #Set if using Editable intensity range (the range is defined below using object.setParameter)
           self.segmentEditorNode.SetSourceVolumeIntensityMask(True)
-          self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(37, 100)
+          self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(250, 1000)
           self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
       else:
           self.ui.pushButton_Paint.setStyleSheet("background-color : indianred")
