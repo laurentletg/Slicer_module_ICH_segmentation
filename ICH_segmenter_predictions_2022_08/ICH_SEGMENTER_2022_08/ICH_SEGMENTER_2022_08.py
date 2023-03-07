@@ -43,60 +43,6 @@ This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc
 and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR013218-12S1.
 """
 
-    # Additional initialization step after application startup is complete
-    # slicer.app.connect("startupCompleted()", registerSampleData)
-
-
-#
-# Register sample data sets in Sample Data module
-#
-
-# def registerSampleData():
-  # """
-  # Add data sets to Sample Data module.
-  # """
-  # # It is always recommended to provide sample data for users to make it easy to try the module,
-  # # but if no sample data is available then this method (and associated startupCompeted signal connection) can be removed.
-
-  # import SampleData
-  # iconsPath = os.path.join(os.path.dirname(__file__), 'Resources/Icons')
-
-  # # To ensure that the source code repository remains small (can be downloaded and installed quickly)
-  # # it is recommended to store data sets that are larger than a few MB in a Github release.
-
-  # # ICH_SEGMENTER_2022_081
-  # SampleData.SampleDataLogic.registerCustomSampleDataSource(
-  #   # Category and sample name displayed in Sample Data module
-  #   category='ICH_SEGMENTER_2022_08',
-  #   sampleName='ICH_SEGMENTER_2022_081',
-  #   # Thumbnail should have size of approximately 260x280 pixels and stored in Resources/Icons folder.
-  #   # It can be created by Screen Capture module, "Capture all views" option enabled, "Number of images" set to "Single".
-  #   thumbnailFileName=os.path.join(iconsPath, 'ICH_SEGMENTER_2022_081.png'),
-  #   # Download URL and target file name
-  #   uris="https://github.com/Slicer/SlicerTestingData/releases/download/SHA256/998cb522173839c78657f4bc0ea907cea09fd04e44601f17c82ea27927937b95",
-  #   fileNames='ICH_SEGMENTER_2022_081.nrrd',
-  #   # Checksum to ensure file integrity. Can be computed by this command:
-  #   #  import hashlib; print(hashlib.sha256(open(filename, "rb").read()).hexdigest())
-  #   checksums = 'SHA256:998cb522173839c78657f4bc0ea907cea09fd04e44601f17c82ea27927937b95',
-  #   # This node name will be used when the data set is loaded
-  #   nodeNames='ICH_SEGMENTER_2022_081'
-  # )
-
-  # # ICH_SEGMENTER_2022_082
-  # SampleData.SampleDataLogic.registerCustomSampleDataSource(
-  #   # Category and sample name displayed in Sample Data module
-  #   category='ICH_SEGMENTER_2022_08',
-  #   sampleName='ICH_SEGMENTER_2022_082',
-  #   thumbnailFileName=os.path.join(iconsPath, 'ICH_SEGMENTER_2022_082.png'),
-  #   # Download URL and target file name
-  #   uris="https://github.com/Slicer/SlicerTestingData/releases/download/SHA256/1a64f3f422eb3d1c9b093d1a18da354b13bcf307907c66317e2463ee530b7a97",
-  #   fileNames='ICH_SEGMENTER_2022_082.nrrd',
-  #   checksums = 'SHA256:1a64f3f422eb3d1c9b093d1a18da354b13bcf307907c66317e2463ee530b7a97',
-  #   # This node name will be used when the data set is loaded
-  #   nodeNames='ICH_SEGMENTER_2022_082'
-  # )
-
-
 #
 # ICH_SEGMENTER_2022_08Widget
 #
@@ -120,7 +66,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
     # LLG CODE BELOW
     self.ICH_segm_name = None
     self.predictions_names= None
-    self.DefaultDir = None
+    self.DefaultDir = '/Users/laurentletourneau-guillon/Library/CloudStorage/GoogleDrive-laurentletg@gmail.com/My Drive/GDRIVE RECHERCHE/GDRIVE ÉTUDIANTS/An Ni Wu/Brats project/Brats_binary_to_ICH/data/For ANW'
 
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
@@ -155,6 +101,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.getDefaultDir.connect('clicked(bool)', self.getDefaultDir)
     self.ui.BrowseFolders.connect('clicked(bool)', self.onBrowseFoldersButton)
+    self.ui.SlicerDirectoryListView.clicked.connect(self.getCurrentTableItem)
     self.ui.NewICHSegm.connect('clicked(bool)', self.onNewICHSegm)
     self.ui.SaveSegmentationButton.connect('clicked(bool)', self.onSaveSegmentationButton)
     self.ui.BrowseFolders_2.connect('clicked(bool)', self.onBrowseFolders_2Button)
@@ -186,11 +133,6 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
     # Change color of lcd screen
     self.ui.lcdNumber.setStyleSheet("background-color : black")
 
-    # import qSlicerSegmentationsModuleWidgetsPythonQt
-    # self.editor = qSlicerSegmentationsModuleWidgetsPythonQt.qMRMLSegmentEditorWidget()
-    # self.editor.setMaximumNumberOfUndoStates(10)
-    # self.editor.setMRMLScene(slicer.mrmlScene)
-  
 
 
   def getDefaultDir(self):
@@ -199,24 +141,24 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
 
   def onBrowseFoldersButton(self):
       print('Clicked Browse Button')
-      print(f'Current path {self.DefaultDir}')
+    #   print(f'Current path {self.DefaultDir}')
       # LLG get dialog window to ask for directory
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
-      print('Current Folder')
-      print(self.CurrentFolder)
+    #   print('Current Folder')
+    #   print(self.CurrentFolder)
       self.updateCurrentFolder()
       # LLG GET A LIST OF cases WITHIN CURRENT FOLDERS (SUBDIRECTORIES). List comp to get only the case
-      print(f'{self.CurrentFolder}{os.sep}{VOLUME_FILE_TYPE}')
+    #   print(f'{self.CurrentFolder}{os.sep}{VOLUME_FILE_TYPE}')
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}{VOLUME_FILE_TYPE}'))
-      print('Case paths::::')
-      print(self.CasesPaths)
+    #   print('Case paths::::')
+    #   print(self.CasesPaths)
       self.Cases = sorted([re.findall(r'Volume_(ID_[a-zA-Z\d]+)',os.path.split(i)[-1])[0] for i in self.CasesPaths])
-      print('Case numbers::::')
-      print(self.Cases)
+    #   print('Case numbers::::')
+    #   print(self.Cases)
       # Populate the SlicerDirectoryListView
       self.ui.SlicerDirectoryListView.addItems(self.Cases)
       # List view s
-      self.ui.SlicerDirectoryListView.clicked.connect(self.getCurrentTableItem)
+    #   self.ui.SlicerDirectoryListView.clicked.connect(self.getCurrentTableItem)
       # # SET CURRENT INDEX AT 0 === THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
       self.currentCase_index = 0
       self.updateCaseAll()
@@ -230,19 +172,18 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       """
 
   def updateCaseAll(self):
-      # All below is depend on self.currentCase_index updates, 
+      # All below is dependent on self.currentCase_index updates, 
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
     #   self.updateCaseIndexQLineEdit(self.currentCase_index)
       self.updateCurrentPatient()
-      # self.ui.SlicerDirectoryListView.setCurrentRow(self.currentCase)
+      # Highlight the current case in the list view (when pressing on next o)
+      self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+    #   self.ui.SlicerDirectoryListView.updateCaseIndexQLineEdit(self.currentCase_index)
 
       
   def getCurrentTableItem(self):
       # When an item in SlicerDirectroyListView is selected the case number is printed
-      print(self.ui.SlicerDirectoryListView.currentItem().text())
-      # Below gives the row number == index to be used to select elements in the list
-      print(self.ui.SlicerDirectoryListView.currentRow)
       #below we update the case index and we need to pass one parameter to the methods since it takes 2 (1 in addition to self)
       self.updateCaseIndex(self.ui.SlicerDirectoryListView.currentRow) # Index starts at 0
       # Update the case index
@@ -253,6 +194,11 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
       self.updateCurrentPatient()
       self.loadPatient()
+      print('*'*50)
+      print(f'Current case in SlicerDirectroyListView ::: {self.ui.SlicerDirectoryListView.currentItem().text()}')
+      # Below gives the row number == index to be used to select elements in the list
+      print(f'Current row in  SlicerDirectroyListView ::: {self.ui.SlicerDirectoryListView.currentRow}')
+      print('Current caseCase_index :::', self.currentCase_index)
 
       # self.updateCurrentFolder()
       # self.loadPatient()
@@ -305,11 +251,12 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       # Ex. if we have 10 cases, then len(case)=10 and index goes from 0-9,
       # so we have to take the minimum between len(self.Cases)-1 and the currentCase_index (which is incremented by 1 everytime we click the button)
       self.currentCase_index = min(len(self.Cases)-1, self.currentCase_index+1)
-      print('Next clicked', self.currentCase_index)
       # self.updateCaseAll()
       self.updateCaseAll()
       # self.currentCase = os.path.join(self.CurrentFolder,self.Cases[self.currentCase_index])
       self.loadPatient()
+      print('*'*50)
+      print('Next clicked, current caseCase_index :::', self.currentCase_index)
 
       # ----- ANW Addition ----- : Reset timer when change case
       self.resetTimer()
