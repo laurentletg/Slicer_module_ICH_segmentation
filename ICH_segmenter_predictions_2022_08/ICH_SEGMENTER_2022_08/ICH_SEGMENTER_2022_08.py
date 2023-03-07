@@ -262,33 +262,6 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
       self.resetTimer()
 
 
-  def onNewICHSegm(self):
-      # slicer.util.selectModule("SegmentEditor")
-      self.ICH_segm_name = "{}_ICH".format(self.currentCase)
-      print(f'Segmentation name:: {self.ICH_segm_name}')
-      self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-      self.segmentEditorNode = self.segmentEditorWidget.mrmlSegmentEditorNode()
-      self.segmentationNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
-      self.segmentEditorWidget.setSegmentationNode(self.segmentationNode)
-      self.segmentEditorWidget.setMasterVolumeNode(self.VolumeNode)
-      # set refenrence geometry to Volume node
-      self.segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-      #below with add a 'segment' in the segmentatation node which is called 'self.ICH_segm_name
-      self.addedSegmentID = self.segmentationNode.GetSegmentation().AddEmptySegment(self.ICH_segm_name)
-      #Select Segment (else you need to click on it yourself)
-      shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-      items = vtk.vtkIdList()
-      sc = shn.GetSceneItemID()
-      shn.GetItemChildren(sc, items, True)
-      self.ICH_segment_name = shn.GetItemName(items.GetId(2))
-      self.segmentEditorNode.SetSelectedSegmentID(self.ICH_segment_name)
-      self.updateCurrentSegmenationLabel()
-      # Toggle paint brush right away. 
-      self.onPushButton_1()
-      self.startTimer()
-
-      # ----- ANW Addition ----- : Reset called to False when new segmentation is created to restart the timer
-      self.called = False
 
   def onNewICHSegm(self):
       # slicer.util.selectModule("SegmentEditor")
@@ -752,7 +725,7 @@ class ICH_SEGMENTER_2022_08Widget(ScriptedLoadableModuleWidget, VTKObservationMi
           self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
           #Set if using Editable intensity range (the range is defined below using object.setParameter)
           self.segmentEditorNode.SetSourceVolumeIntensityMask(True)
-          self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(250, 1000)
+          self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(35, 90)
           self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
       else:
           self.ui.pushButton_Paint.setStyleSheet("background-color : indianred")
